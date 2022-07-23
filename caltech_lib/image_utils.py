@@ -26,10 +26,13 @@ def upsample_image(image: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
     return image
 
 
+def normalize(x: np.ndarray) -> np.ndarray:
+    return (x - np.min(x)) / (np.max(x) - np.min(x))
+
 # plotting functions
 def plot_batch(images: np.ndarray, labels: List[str] = None):
     n_images = images.shape[0]
-    N_COLS = 4
+    N_COLS = 8
     n_rows = n_images // N_COLS
     f,ax = plt.subplots(n_rows, N_COLS)
 
@@ -39,7 +42,7 @@ def plot_batch(images: np.ndarray, labels: List[str] = None):
     for i, (image, label) in enumerate(zip(images, labels)):
         r,c = divmod(i, N_COLS)
         if type(image) == torch.Tensor:
-            image = np.moveaxis(image.detach().cpu().numpy(), 0, -1)
+            image = np.moveaxis(normalize(image.detach().cpu().numpy()), 0, -1)
         ax[r,c].imshow(image)
         ax[r,c].set_title(label)
         ax[r,c].set_xticks([])
