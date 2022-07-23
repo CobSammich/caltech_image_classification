@@ -2,7 +2,7 @@
 
 """
 
-from typing import Tuple
+from typing import Tuple, List
 import os
 import glob
 import ipdb
@@ -16,12 +16,10 @@ from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms
 import torch.nn.functional as F
 
-from constants import DATADIR, IMAGE_SIZE
-from image_utils import read_image, upsample_image, plot_batch
+from .constants import DATADIR, IMAGE_SIZE
+from .image_utils import read_image, upsample_image, plot_batch
 
-
-
-class Caltech_Dataset(Dataset):
+def get_dataset_filenames(n_classes:int, datadir: str):
     """
     The dataset is in the format:
     caltech/
@@ -34,16 +32,38 @@ class Caltech_Dataset(Dataset):
         ...
         - class?
     """
+    class_dirs = sorted(glob.glob(os.path.join(DATADIR, "**/")))[:n_classes]
+    filenames = [sorted(glob.glob(os.path.join(d, "*.jpg"))) for d in class_dirs]
+    # now flatten the list
+    filenames = [imf for imdir in filenames for imf in imdir]
+    return filenames
+
+
+def split_dataset(filenames: List[str],
+                  train_test_split: float,
+                  shuffle: bool = True) -> Tuple[List[str], List[str]]:
+    n_files = len(filenames)
+    if shuffle:
+        np.random.shuffle(filenames)
+    train = filenames[:int(n_files * train_test_split)]
+    n_train = len(train)
+    test = filenames[n_train:]
+    return train, test
+
+
+class Caltech_Dataset(Dataset):
     def __init__(self,
+                 filenames: List[str],
                  datadir: str,
                  image_size: Tuple[int, int] = (256, 256),
                  transform: transforms.Compose = None,
                  n_classes: int = 257) -> None:
+        self.filenames = filenames
         self.datadir = datadir
         self.image_size = image_size
         self.transform = transform
 
-        # Retrieve all the filenames of the images
+        # Retrieve the classnames
         self.class_dirs = sorted(glob.glob(os.path.join(self.datadir, "**/")))[:n_classes]
         # Classnames from "/path/to/002.american-flag/*.jpg"
         self.classnames = [os.path.basename(os.path.dirname(p)).split(".")[-1]
@@ -51,18 +71,19 @@ class Caltech_Dataset(Dataset):
         # Create one-hot encoding vectors for each class
         self.classname_to_classnum = {k : F.one_hot(torch.tensor(v), num_classes=n_classes)
             for v, k in enumerate(self.classnames)}
+        self.classnum_to_classname = {np.argmax(v.numpy()) : k
+            for k,v in self.classname_to_classnum.items()}
 
-        self.all_filenames = [sorted(glob.glob(os.path.join(d, "*.jpg"))) for d in self.class_dirs]
-        self.all_filenames = [imf for imdir in self.all_filenames for imf in imdir]
+
         if self.transform is None:
             # we still need to convert to a tensor
             self.transform = transforms.Compose([transforms.ToTensor()])
 
     def __len__(self):
-        return len(self.all_filenames)
+        return len(self.filenames)
 
     def __getitem__(self, index: int) -> Tuple[np.ndarray, str]:
-        img_path = self.all_filenames[index]
+        img_path = self.filenames[index]
         # Image label is in the
         dirname = os.path.basename(os.path.dirname(img_path))
         label = dirname.split(".")[-1]
@@ -78,10 +99,14 @@ class Caltech_Dataset(Dataset):
         return image, label
 
 
-
 if __name__ == "__main__":
     image_size = IMAGE_SIZE[:2]
     n_classes = 2
+
+    # Grab all the files in the dataset
+    filenames = get_dataset_filenames(n_classes, datadir=DATADIR)
+    ipdb.set_trace()
+    train_files, test_files = split_dataset(filenames, train_test_split=0.8, shuffle=True)
 
     tr = transforms.Compose([
                                 transforms.ToTensor(),
@@ -89,12 +114,12 @@ if __name__ == "__main__":
                                 #transforms.Resize(size=min(image_size))
                             ])
 
-    cd = Caltech_Dataset(DATADIR, image_size=IMAGE_SIZE, transform=tr, n_classes=n_classes)
+    cd = Caltech_Dataset(filenames=train_files, datadir=DATADIR,
+                         image_size=IMAGE_SIZE, transform=tr, n_classes=n_classes)
     ipdb.set_trace()
 
     train_dataloader = DataLoader(cd, batch_size=32, shuffle=True)
     images, labels = next(iter(train_dataloader))
-    plot_batch(images, labels)
     ipdb.set_trace()
-
-
+    label_strings = [cd.classnum_to_classname[np.argmax(label.numpy())] for label in labels]
+    plot_batch(images, label_strings)

@@ -4,6 +4,9 @@ Module for training functions and driver for training
 
 import torch
 from torch.utils.data.dataloader import DataLoader
+import numpy as np
+
+from caltech_lib.image_utils import plot_batch
 
 def train_loop(dataloader: DataLoader,
                model: torch.nn.Module,
@@ -16,13 +19,16 @@ def train_loop(dataloader: DataLoader,
         pred = model(images.to(device))
         loss = loss_function(pred, labels.float().to(device))
 
+        #label_strings = [dataloader.dataset.classnum_to_classname[np.argmax(label.numpy())] for label in labels]
+        #plot_batch(images, label_strings)
         # Backprop
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         loss, current = loss.item(), batch_num * len(images)
-        print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+        print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]", end='\r')
+    print("\n")
 
 def test_loop(dataloader: DataLoader,
               model: torch.nn.Module,

@@ -41,7 +41,7 @@ def plot_batch(images: np.ndarray, labels: List[str] = None):
         if type(image) == torch.Tensor:
             image = np.moveaxis(image.detach().cpu().numpy(), 0, -1)
         ax[r,c].imshow(image)
-        ax[r,c].set_title(labels[i])
+        ax[r,c].set_title(label)
         ax[r,c].set_xticks([])
         ax[r,c].set_yticks([])
     plt.show()

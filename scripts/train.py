@@ -14,16 +14,16 @@ from torchvision import transforms
 from torch.utils.data.dataloader import DataLoader
 
 from caltech_lib.constants import IMAGE_SIZE, DATADIR
-from caltech_lib.dataloader import Caltech_Dataset
+from caltech_lib.dataloader import Caltech_Dataset, split_dataset, get_dataset_filenames
 from caltech_lib.model_architecture import My_Model
 from caltech_lib.train_utils import train_loop, test_loop
 
 
-if __name__ == "__main__":
-    N_CLASSES = 2
+def main():
+    N_CLASSES = 20
     # learning rate
-    LEARNING_RATE = 0.001
-    N_EPOCHS = 5
+    LEARNING_RATE = 0.0001
+    N_EPOCHS = 100
 
     os.environ['CUDA_VISIBLE_DEVICES'] = "0"
     # 72.46 vs 5.38 seconds - without vs with 3090 GPU
@@ -39,11 +39,17 @@ if __name__ == "__main__":
                                  transforms.CenterCrop(size=IMAGE_SIZE[:2])
                              ])
 
+    filenames = get_dataset_filenames(N_CLASSES, DATADIR)
+    # split the filenames into train and test set
+    train_files, test_files = split_dataset(filenames, train_test_split=0.8, shuffle=True)
+    ipdb.set_trace()
+
     # Come up with a way to actually split the files
-    cd_train = Caltech_Dataset(DATADIR, image_size=IMAGE_SIZE,
+    cd_train = Caltech_Dataset(train_files, DATADIR, image_size=IMAGE_SIZE,
                                transform=image_transform,
                                n_classes=N_CLASSES)
-    cd_test = Caltech_Dataset(DATADIR, image_size=IMAGE_SIZE,
+
+    cd_test = Caltech_Dataset(test_files, DATADIR, image_size=IMAGE_SIZE,
                               transform=truth_transform,
                               n_classes=N_CLASSES)
 
@@ -67,4 +73,6 @@ if __name__ == "__main__":
     print(f"Time taken for {N_EPOCHS} epochs: {t1 - t0:.5f}")
 
 
+if __name__ == "__main__":
+    main()
 
