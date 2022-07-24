@@ -29,6 +29,7 @@ def main():
     if image.shape[0] < IMAGE_SIZE[0] or image.shape[1] < IMAGE_SIZE[1]:
         image = upsample_image(image, IMAGE_SIZE)
 
+    ipdb.set_trace()
     plt.imshow(image)
     plt.show()
 

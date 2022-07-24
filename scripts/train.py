@@ -16,7 +16,7 @@ from torch.utils.data.dataloader import DataLoader
 
 from caltech_lib.constants import IMAGE_SIZE, DATADIR, bcolors
 from caltech_lib.dataloader import Caltech_Dataset, split_dataset, get_dataset_filenames
-from caltech_lib.model_architecture import My_Model
+from caltech_lib.model_architecture import My_Model, VGG_Model
 from caltech_lib.train_utils import train_loop, test_loop
 
 
@@ -49,7 +49,9 @@ def main():
                             ])
     truth_transform  = transforms.Compose([
                                  transforms.ToTensor(),
-                                 transforms.CenterCrop(size=IMAGE_SIZE[:2]),
+                                 #transforms.CenterCrop(size=IMAGE_SIZE[:2]),
+                                 transforms.FiveCrop(size=IMAGE_SIZE[:2]),
+                                 transforms.Lambda(lambda crops: torch.stack([crop for crop in crops])),
                                  # Normalize images the same way
                                  transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                       std=[0.229, 0.224, 0.225])
@@ -69,13 +71,13 @@ def main():
                               n_classes=N_CLASSES)
 
     train_dataloader = DataLoader(cd_train, batch_size=BATCH_SIZE, shuffle=True)
-    test_dataloader = DataLoader(cd_test, batch_size=BATCH_SIZE, shuffle=False)
+    test_dataloader = DataLoader(cd_test, batch_size=BATCH_SIZE // 4, shuffle=False)
 
     # train a pre-trained model?
     if MODEL_RETRAIN_WEIGHTS is not None:
         model = torch.load(MODEL_RETRAIN_WEIGHTS)
     else:
-        model = My_Model(N_CLASSES)
+        model = VGG_Model(N_CLASSES)
 
     loss_function = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
