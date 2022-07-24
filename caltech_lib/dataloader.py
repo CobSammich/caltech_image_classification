@@ -16,8 +16,8 @@ from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms
 import torch.nn.functional as F
 
-from .constants import DATADIR, IMAGE_SIZE
-from .image_utils import read_image, upsample_image, plot_batch
+from caltech_lib.constants import DATADIR, IMAGE_SIZE
+from caltech_lib.image_utils import read_image, upsample_image, plot_batch, normalize
 
 def get_dataset_filenames(n_classes:int, datadir: str):
     """
@@ -89,6 +89,7 @@ class Caltech_Dataset(Dataset):
         label = dirname.split(".")[-1]
         # Read image and pass through transforms
         image = read_image(img_path)
+        image = normalize(image).astype(np.float32)
         # check if this image is the right size
         if image.shape[0] < self.image_size[0] or image.shape[1] < self.image_size[1]:
             image = upsample_image(image, self.image_size)
@@ -110,8 +111,12 @@ if __name__ == "__main__":
 
     tr = transforms.Compose([
                                 transforms.ToTensor(),
-                                transforms.RandomCrop(size=image_size)
+                                transforms.FiveCrop(size=image_size),
+                                transforms.Lambda(lambda crops: torch.stack([crop for crop in crops])),
+                                #transforms.RandomCrop(size=image_size)
                                 #transforms.Resize(size=min(image_size))
+                                transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                     std=[0.229, 0.224, 0.225])
                             ])
 
     cd = Caltech_Dataset(filenames=train_files, datadir=DATADIR,
