@@ -27,7 +27,9 @@ def main():
     BATCH_SIZE = 64
     N_EPOCHS = 100
     MODEL_SAVE_FILE = f"/mnt/Terry/ML_models/caltech256_{N_CLASSES}class_classifier.pth"
-    MODEL_RETRAIN_WEIGHTS = f"/mnt/Terry/ML_models/caltech256_{N_CLASSES}class_classifier.pth"
+    # Do transfer learning?
+    MODEL_RETRAIN_WEIGHTS = None
+    #MODEL_RETRAIN_WEIGHTS = f"/mnt/Terry/ML_models/caltech256_{N_CLASSES}class_classifier.pth"
 
     os.environ['CUDA_VISIBLE_DEVICES'] = "0"
     # 72.46 vs 5.38 seconds for 5 epochs - without vs with 3090 GPU

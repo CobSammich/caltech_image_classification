@@ -11,3 +11,15 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+import os
+import glob
+
+_class_dirs = sorted(glob.glob(os.path.join(DATADIR, "**/")))
+_class_dirs = [os.path.basename(os.path.dirname(p)) for p in _class_dirs]
+
+CLASSNUM_TO_CLASSNAME = {
+    int(subdir.split('.')[0]) : subdir.split('.')[1] for subdir in _class_dirs
+}
+
