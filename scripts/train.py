@@ -24,7 +24,7 @@ def main():
     N_CLASSES = 20
     # learning rate
     LEARNING_RATE = 0.0001
-    BATCH_SIZE = 64
+    BATCH_SIZE = 32
     N_EPOCHS = 100
     MODEL_SAVE_FILE = f"/mnt/Terry/ML_models/caltech256_{N_CLASSES}class_classifier.pth"
     # Do transfer learning?
@@ -53,8 +53,13 @@ def main():
                                  transforms.FiveCrop(size=IMAGE_SIZE[:2]),
                                  transforms.Lambda(lambda crops: torch.stack([crop for crop in crops])),
                                  # Normalize images the same way
-                                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                      std=[0.229, 0.224, 0.225])
+                                 # https://discuss.pytorch.org/t/trouble-using-transforms-fivecrop-tencrop/32059/4
+                                 transforms.Lambda(lambda tensors:
+                                    torch.stack([transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                      std=[0.229, 0.224, 0.225])(t)
+                                                for t in tensors]))
+                                 #transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                      #std=[0.229, 0.224, 0.225])
                              ])
 
     filenames = get_dataset_filenames(N_CLASSES, DATADIR)

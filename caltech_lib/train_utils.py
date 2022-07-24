@@ -17,19 +17,26 @@ def train_loop(dataloader: DataLoader,
                device: torch.device):
     size = len(dataloader.dataset)
     for batch_num, (images, labels) in enumerate(dataloader):
-        # make prediction and compute loss on this batch
+        curr_batch_size = images.shape[0]
+        n_crops = 1
+        if len(images.shape) == 5:
+            n_crops = images.shape[1]
+            # Using some type of FiveCrop/TenCrop transform - make
+            images = images.view(-1, IMAGE_SIZE[2], IMAGE_SIZE[0], IMAGE_SIZE[1])
         pred = model(images.to(device))
-        loss = loss_function(pred, labels.float().to(device))
 
-        #label_strings = [dataloader.dataset.classnum_to_classname[np.argmax(label.numpy())] for label in labels]
-        #plot_batch(images, label_strings)
-        # Backprop
+        # https://discuss.pytorch.org/t/confused-on-how-to-keep-labels-paired-after-using-five-or-tencrop-augmentation/21289/2
+        pred_avg = pred.view(curr_batch_size, n_crops, -1).mean(1) # avg over crops
+
+        loss = loss_function(pred_avg, labels.float().to(device))
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         loss, current = loss.item(), batch_num * len(images)
         print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]", end='\r')
+
     print("\n")
 
 def test_loop(dataloader: DataLoader,
