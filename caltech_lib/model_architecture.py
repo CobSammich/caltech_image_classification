@@ -12,12 +12,14 @@ class Conv_Block(torch.nn.Module):
         super(Conv_Block, self).__init__()
 
         self.conv = torch.nn.Conv2d(in_channels, out_channels, kernel_size=(3,3), padding=(1, 1))
+        self.relu = torch.nn.ReLU(inplace=True)
         self.batch_norm = torch.nn.BatchNorm2d(out_channels)
         self.pool = torch.nn.MaxPool2d(kernel_size=(2,2))
 
     def forward(self, x):
         x = self.conv(x)
         x = self.batch_norm(x)
+        x = self.relu(x)
         x = self.pool(x)
         return x
 
